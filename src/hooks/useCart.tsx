@@ -39,8 +39,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   });
 
   useEffect(() => {
-    //TODO: Setar no localstorage toda vez que cart mudar
-    console.log(`cart`, cart);
+    localStorage.setItem("@RocketShoes:cart", JSON.stringify(cart));
   }, [cart]);
 
   const addProduct = async (productId: number) => {
