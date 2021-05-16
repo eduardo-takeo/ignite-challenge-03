@@ -1,7 +1,13 @@
-import { createContext, ReactNode, useContext, useState } from 'react';
-import { toast } from 'react-toastify';
-import { api } from '../services/api';
-import { Product, Stock } from '../types';
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { toast } from "react-toastify";
+import { api } from "../services/api";
+import { Product, Stock } from "../types";
 
 interface CartProviderProps {
   children: ReactNode;
@@ -23,20 +29,47 @@ const CartContext = createContext<CartContextData>({} as CartContextData);
 
 export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const [cart, setCart] = useState<Product[]>(() => {
-    // const storagedCart = Buscar dados do localStorage
+    const storagedCart = localStorage.getItem("@RocketShoes:cart");
 
-    // if (storagedCart) {
-    //   return JSON.parse(storagedCart);
-    // }
+    if (storagedCart) {
+      return JSON.parse(storagedCart);
+    }
 
     return [];
   });
 
+  useEffect(() => {
+    //TODO: Setar no localstorage toda vez que cart mudar
+    console.log(`cart`, cart);
+  }, [cart]);
+
   const addProduct = async (productId: number) => {
     try {
-      // TODO
+      const stock = await api.get(`/stock/${productId}`);
+      const hasInStock = stock.data.amount > 0;
+
+      if (!hasInStock) {
+        toast.error("Quantidade solicitada fora de estoque");
+        return;
+      }
+
+      const existingItem = cart.find((cartItem) => cartItem.id === productId);
+
+      if (existingItem) {
+        const updatedCart = cart.map((cartItem) => {
+          return cartItem.id === productId
+            ? { ...cartItem, amount: cartItem.amount + 1 }
+            : cartItem;
+        });
+        setCart(updatedCart);
+        return;
+      }
+
+      const productToAdd = await api.get(`/products/${productId}`);
+
+      setCart([...cart, { ...productToAdd.data, amount: 1 }]);
     } catch {
-      // TODO
+      toast.error("Erro na adição do produto");
     }
   };
 
